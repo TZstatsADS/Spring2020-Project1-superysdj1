@@ -2,4 +2,4 @@
 
 ### Figs folder
 
-The figs directory contains the visualizations generated from the projects. Please refer to file "Project1 Markdown.Rmd" in the "doc" directory.
+The figs directory contains the visualizations generated from this project. Please refer to file "Project1 Markdown.Rmd" in the "doc" directory to generate these visualizations on your own.
