@@ -1,0 +1,198 @@
+---
+title: "Lyrics Analysis: What genre are popular and what emotions they try to express
+  from the songs?"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Project Summary: A song can a mean to express emotions and thoughts of our times.
+  Analyzing lyrics may provide insights on what people of those times want to tell.
+  A filtered corpus of 100,000+ song lyrics from MetroLyrics is used for this analysis.
+
+Let's launch all necessary packages
+
+```{r}
+library(dplyr); library(ggplot2); library(ggthemes);library(dplyr); library(tidytext)
+```
+
+Let's load the original dataset "dt_lyrics". You need to change this directory to import from your source.
+
+```{r}
+load("/Users/sol/Downloads/processed_lyrics.RData")
+```
+
+Let's create a new dataset "lyrics_df"" for analysis while keeping original dataset "dt_lyrics" intact.
+```{r}
+lyrics_df = dt_lyrics
+```
+
+Let's review the structure of "lyrics_df". It appears that there are few songs that have abnormal year or very few count in the year. 
+```{r}
+table(lyrics_df$year)
+```
+
+Let's remove theses outlier years for more accurate analysis.
+```{r}
+lyrics_df = subset(dt_lyrics, year!= 112 & year!= 702 & year!=1968)
+table(lyrics_df$year)
+```
+
+Let's run a histogram of all songs count by year as an exploratory analysis.
+```{r}
+ggplot(data=lyrics_df,aes(x=year))+
+  geom_histogram(fill='sienna', bins=10)
+```
+
+Analyzing how the genres make up the total number of songs in each year, the analysis provides following findings.
+
+1) In average, the three most number of songs across all years in the analysis seem to be Rock, Pop, and R&B. This could imply that Americans' all-time favorite genre are Rock, Pop, and R&B.
+
+2) Hip-Hop started gained ground in 1992 and became a solid favorite genre since then.
+
+```{r}
+p <- ggplot(data = lyrics_df,
+            mapping = aes(x = year, fill = genre))
+p + geom_bar(position = "fill") + scale_fill_manual(values=c("#FF5B33", "#FFA233", "#FFDD33", "#DAFF33", "#286A5B", "#33FFC4", "#FF33D1","#581845", "#FFF000", "#6133FF", "#A533FF", "#0A0002"))
+```
+
+Let's launch Bing lexicon. It enables sentiment analysis.
+```{r}
+as.data.frame(get_sentiments('bing'))[1:50,]
+get_sentiments('bing')%>%
+  group_by(sentiment)%>%
+  count()
+```
+
+Let's match the words in the Bing dictionary with the ones in the stemmedwords to identify sentiments in each song.
+```{r}
+lyrics_df%>%
+  group_by(id)%>%
+  unnest_tokens(output = word, input = stemmedwords)%>%
+  inner_join(get_sentiments('bing'))%>%
+  group_by(sentiment)
+```
+
+Analyzing Positive and Negative Words in stemmedwords, it seems there are more negative sentiments than positive sentiments in songs.
+
+```{r}
+lyrics_df%>%
+  group_by(id)%>%
+  unnest_tokens(output = word, input = stemmedwords)%>%
+  inner_join(get_sentiments('bing'))%>%
+  group_by(sentiment)%>%
+  count()
+```
+
+Breaking the sentiment analysis by each genre across all years, following findings are gained.
+
+1) Metal and Hip-Hop have higher negative sentiment than positive sentiment compared to other genres
+
+2) Only Jazz has distinguishable positive sentiment than negative sentiment
+
+```{r}
+lyrics_df %>%
+  select(id,stemmedwords,genre)%>%
+  group_by(id)%>%
+  unnest_tokens(output=word,input=stemmedwords)%>%
+  ungroup()%>%
+  inner_join(get_sentiments('bing'))%>%
+  group_by(genre,sentiment)%>%
+  summarize(n = n())%>%
+  mutate(proportion = n/sum(n))%>%
+  ggplot(aes(x=genre,y=proportion,fill=sentiment))+geom_col()+theme_economist()
+```
+
+To analyze the sentiment deeper, nrc lexicon is applied.  
+```{r}
+library(remotes)
+install_github("EmilHvitfeldt/textdata")
+install_github("juliasilge/tidytext")
+library(tidytext)
+
+get_sentiments('nrc')%>%
+  group_by(sentiment)%>%
+  count()
+
+table(get_sentiments('nrc')$sentiment)  
+```
+
+Let's classify stemmedwords across all songs into emotions provided by NRC.
+```{r}
+lyrics_df%>%
+  group_by(id)%>%
+  unnest_tokens(output = word, input = stemmedwords)%>%
+  inner_join(get_sentiments('nrc'))%>%
+  group_by(sentiment)%>%
+  count()
+```
+
+Visualing the above analysis, joy and sadness make up the two most emotions excluding postive and negative.
+
+```{r}
+lyrics_df%>%
+  group_by(id)%>%
+  unnest_tokens(output = word, input = stemmedwords)%>%
+  inner_join(get_sentiments('nrc'))%>%
+  group_by(sentiment)%>%
+  count()%>%
+  ggplot(aes(x=reorder(sentiment,X = n),y=n,fill=sentiment))+geom_col()+guides(fill=F)+coord_flip()+theme_wsj()
+```
+
+Visualizing which genre stands out in terms of each emotion. It seems that Hip-Hop stands out the most out of all emotions that are negative (anger, disgust, fear, negative, sadness)
+
+```{r}
+lyrics_df%>%
+  group_by(id)%>%
+  unnest_tokens(output = word, input = stemmedwords)%>%
+  inner_join(get_sentiments('nrc'))%>%
+  group_by(id,sentiment,genre)%>%
+  count()%>%
+  group_by(sentiment, genre)%>%
+  summarize(n = mean(n))%>%
+  ungroup()%>%
+  ggplot(aes(x=genre,y=n,fill=genre))+
+  geom_col()+
+  facet_wrap(~sentiment)+
+  guides(fill=F)+coord_flip()
+```
+
+Visualizing it to analyze emotions by genre, findings are;
+
+1) In general, Hip-Hop songs focus on expressing negative emotions in their lyrics.
+
+2) Next to Hip-Hop, Metal songs also tend to express negative emotions in their lyrics.
+
+3) all other genres show similar patterns of express emotions, with positive sentiment slightly higher than negative sentiment
+
+4) Jazz stood out among all genres by expressing distintive positive sentiment.
+
+```{r}
+lyrics_df%>%
+  group_by(id)%>%
+  unnest_tokens(output = word, input = stemmedwords)%>%
+  inner_join(get_sentiments('nrc'))%>%
+  group_by(id,sentiment,genre)%>%
+  count()%>%
+  group_by(sentiment, genre)%>%
+  summarize(n = mean(n))%>%
+  ungroup()%>%
+  ggplot(aes(x=sentiment,y=n,fill=genre))+
+  geom_col()+
+  facet_wrap(~genre)+
+  guides(fill=F)+coord_flip()
+```
+
+---- SUMMARY of the project ---
+
+Using the dataset retrieved from MetroLyrics, more than 100,000+ songs were analyzed to learn about emotions they aimed to express through the lyrics. While all other genres showed similar patterns of expressing positive emotions slightly higher than negative emotions, Hip-Hop and Metal expressed mostly negative emotions in their lyrics. Considering the fact the Hip-Hop particulary gained its ground starting 1992, we can imply that Hip-Hop became the channel for artists to express their negative emotions about their times. Rock, which is generally the most listened genre across all years, expressed balanced positive and negative emotions. Jazz is the only genre that express more positive emotions than negative emotions distinctively. It implies that people tend to listen to Jazz when they feel happy or want to feel happy. 
+
+
+--- Code Citation ---
+
+Lecture from Columbia University SPS - APPLIED ANALYTICS FRAMEWORKS & METHDS II - sentimentAnalysis-1.html
+
+Please refer to file "sentimentAnalysis-1.html" in the "lib" directory.
+
