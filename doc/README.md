@@ -1,4 +1,4 @@
-# ADS Project 1:  R Notebook on Lyrics Analysis
+# ADS Project 1:  Lyrics Analysis: What genre are popular and what emotions they try to express from the songs?
 
 ### Doc folder
 
