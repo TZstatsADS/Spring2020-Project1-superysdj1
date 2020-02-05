@@ -11,7 +11,7 @@ Term: Spring 2020
 
 + Project summary: 
 
-A song can a mean to express emotions and thoughts of our times. Analyzing lyrics may provide insights on what people of those times want to tell. A filtered corpus of 100,000+ song lyrics from MetroLyrics is used for this analysis. 
+A song can be a channel to express emotions and thoughts of our times. Analyzing lyrics of the songs may provide us insights on what people of those times want to tell or feel. A filtered corpus of 100,000+ song lyrics from MetroLyrics is used for this analysis. 
 
 + Questions to explore: Some questions that can be explored and answered by this analysis are;
 
